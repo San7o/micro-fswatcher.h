@@ -71,22 +71,22 @@ extern "C" {
 // Config: Prefix for all functions
 // For function inlining, set this to `static inline` and then define
 // the implementation in all the files
-#ifndef MICRO_EXAMPLE_DEF
-  #define MICRO_EXAMPLE_DEF extern
+#ifndef MICRO_FSWATCHER_DEF
+  #define MICRO_FSWATCHER_DEF extern
 #endif
   
 // Config: Define memory allocation function
 // Notes: This is expected to be used like malloc(3)
-#ifndef HASHMAP_MALLOC
+#ifndef MICRO_FSWATCHER_MALLOC
   #include <stdlib.h>
-  #define HASHMAP_MALLOC malloc
+  #define MICRO_FSWATCHER_MALLOC malloc
 #endif
 
 // Config: Define memory free function
 // Notes: This is expected to be used like free(3)
-#ifndef HASHMAP_FREE
+#ifndef MICRO_FSWATCHER_FREE
   #include <stdlib.h>
-  #define HASHMAP_FREE free
+  #define MICRO_FSWATCHER_FREE free
 #endif
 
 //
@@ -105,14 +105,14 @@ typedef enum {
 //
 
 
-MICRO_EXAMPLE_DEF FsWatcherHandle fswatcher_init(void); // returns NULL on failure
-MICRO_EXAMPLE_DEF void fswatcher_destroy(FsWatcherHandle fw);
+MICRO_FSWATCHER_DEF FsWatcherHandle fswatcher_init(void); // returns NULL on failure
+MICRO_FSWATCHER_DEF void fswatcher_destroy(FsWatcherHandle fw);
 
-MICRO_EXAMPLE_DEF int fswatcher_add(FsWatcherHandle fw, const char* path,
+MICRO_FSWATCHER_DEF int fswatcher_add(FsWatcherHandle fw, const char* path,
                                     FsWatcherEvent event_mask);
-MICRO_EXAMPLE_DEF int fswatcher_rm(FsWatcherHandle fw, const char* path);
+MICRO_FSWATCHER_DEF int fswatcher_rm(FsWatcherHandle fw, const char* path);
 
-MICRO_EXAMPLE_DEF const char* fswatcher_watch(FsWatcherHandle fw); // blocks
+MICRO_FSWATCHER_DEF const char* fswatcher_watch(FsWatcherHandle fw); // blocks
 
 //
 // Implementation
@@ -147,7 +147,7 @@ typedef struct FsWatcherUnix {
 
 FsWatcherHandle fswatcher_init(void)
 {
-  FsWatcherUnix* fw = malloc(sizeof(FsWatcherUnix));
+  FsWatcherUnix* fw = MICRO_FSWATCHER_MALLOC(sizeof(FsWatcherUnix));
   fw->fd = inotify_init();
   if (fw->fd == -1)
     return NULL;
@@ -155,7 +155,7 @@ FsWatcherHandle fswatcher_init(void)
   return fw;
 }
 
-void fswatcher_destroy(FsWatcherHandle fw)
+MICRO_FSWATCHER_DEF void fswatcher_destroy(FsWatcherHandle fw)
 {
   if (!fw) return;
   FsWatcherUnix *fw_unix = (FsWatcherUnix*) fw;
@@ -167,13 +167,13 @@ void fswatcher_destroy(FsWatcherHandle fw)
   while (it)
   {
     next = it->next;
-    free(it);
+    MICRO_FSWATCHER_FREE(it);
     it = next;
   }
 }
 
-int fswatcher_add(FsWatcherHandle fw, const char* path,
-                  FsWatcherEvent event)
+MICRO_FSWATCHER_DEF int fswatcher_add(FsWatcherHandle fw, const char* path,
+                                      FsWatcherEvent event)
 {
   if (!fw) return -1;
   FsWatcherUnix *fw_unix = (FsWatcherUnix*) fw;
@@ -189,7 +189,7 @@ int fswatcher_add(FsWatcherHandle fw, const char* path,
   if (wd == -1)
     return -2;
 
-  FsWatcherUnixWdList* wd_item = malloc(sizeof(FsWatcherUnixWdList));
+  FsWatcherUnixWdList* wd_item = MICRO_FSWATCHER_MALLOC(sizeof(FsWatcherUnixWdList));
   wd_item->wd       = wd;
   wd_item->pathname = path;
   wd_item->mask     = mask;
@@ -207,7 +207,8 @@ int fswatcher_add(FsWatcherHandle fw, const char* path,
   return 0;
 }
 
-int fswatcher_rm(FsWatcherHandle fw, const char* path)
+MICRO_FSWATCHER_DEF int fswatcher_rm(FsWatcherHandle fw,
+                                     const char* path)
 {
   if (!fw) return 0;
   FsWatcherUnix *fw_unix = (FsWatcherUnix*) fw;
@@ -228,11 +229,11 @@ int fswatcher_rm(FsWatcherHandle fw, const char* path)
     fw_unix->wd_list = it->next;
   else
     prev->next = it->next;
-  free(it);
+  MICRO_FSWATCHER_FREE(it);
   return 0;
 }
 
-const char* fswatcher_watch(FsWatcherHandle fw)
+MICRO_FSWATCHER_DEF const char* fswatcher_watch(FsWatcherHandle fw)
 {
   if (!fw) return 0;
   FsWatcherUnix *fw_unix = (FsWatcherUnix*) fw;
@@ -281,9 +282,9 @@ typedef struct FsWatcherWindowsHandle {
   FsWatcherWindowsDirList *dir_list;
 } FsWatcherWindowsHandle;
 
-FsWatcherHandle fswatcher_init(void)
+MICRO_FSWATCHER_DEF FsWatcherHandle fswatcher_init(void)
 {
-  FsWatcherWindowsHandle *fw_windows = malloc(sizeof(FsWatcherWindowsHandle));
+  FsWatcherWindowsHandle *fw_windows = MICRO_FSWATCHER_MALLOC(sizeof(FsWatcherWindowsHandle));
   memset(fw_windows, 0, sizeof(FsWatcherWindowsHandle));
 
   fw_windows->iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE,
@@ -292,14 +293,14 @@ FsWatcherHandle fswatcher_init(void)
                                             0);
   if (!fw_windows->iocp)
   {
-    free(fw_windows);
+    MICRO_FSWATCHER_FREE(fw_windows);
     return NULL;
   }
   
   return fw_windows;
 }
 
-void fswatcher_destroy(FsWatcherHandle fw)
+MICRO_FSWATCHER_DEF void fswatcher_destroy(FsWatcherHandle fw)
 {
   if (!fw) return;
   
@@ -319,8 +320,8 @@ void fswatcher_destroy(FsWatcherHandle fw)
   CloseHandle(fw_windows->iocp);
 }
 
-int fswatcher_add(FsWatcherHandle fw, const char* path,
-                  FsWatcherEvent event)
+MICRO_FSWATCHER_DEF int fswatcher_add(FsWatcherHandle fw, const char* path,
+                                      FsWatcherEvent event)
 {
   if (!fw) return -1;
 
@@ -350,7 +351,8 @@ int fswatcher_add(FsWatcherHandle fw, const char* path,
                        &file_part) == 0)
     return -1;
 
-  FsWatcherWindowsDirList *fw_dir = malloc(sizeof(FsWatcherWindowsDirList));
+  FsWatcherWindowsDirList *fw_dir =
+    MICRO_FSWATCHER_MALLOC(sizeof(FsWatcherWindowsDirList));
   memset(fw_dir, 0, sizeof(FsWatcherWindowsDirList));
   fw_dir->filter = filter;
   strcpy(fw_dir->path, path);
@@ -370,7 +372,7 @@ int fswatcher_add(FsWatcherHandle fw, const char* path,
                             NULL);
   if (hDir == INVALID_HANDLE_VALUE)
   {
-    free(fw_dir);
+    MICRO_FSWATCHER_FREE(fw_dir);
     return -2;
   }
 
@@ -382,7 +384,7 @@ int fswatcher_add(FsWatcherHandle fw, const char* path,
                              (ULONG_PTR) fw_dir,
                              0) == NULL)
   {
-    free(fw_dir);
+    MICRO_FSWATCHER_FREE(fw_dir);
     return -3;
   }
 
@@ -395,7 +397,7 @@ int fswatcher_add(FsWatcherHandle fw, const char* path,
                             NULL,
                             &fw_dir->overlapped, NULL) == 0)
   {
-    free(fw_dir);
+    MICRO_FSWATCHER_FREE(fw_dir);
     return -4;
   }
 
@@ -411,7 +413,8 @@ int fswatcher_add(FsWatcherHandle fw, const char* path,
   return 0;
 }
 
-int fswatcher_rm(FsWatcherHandle fw, const char* path)
+MICRO_FSWATCHER_DEF int fswatcher_rm(FsWatcherHandle fw,
+                                     const char* path)
 {
   FsWatcherWindowsHandle *fw_win = (FsWatcherWindowsHandle*)fw;
   FsWatcherWindowsDirList **curr = &fw_win->dir_list;
@@ -434,7 +437,7 @@ int fswatcher_rm(FsWatcherHandle fw, const char* path)
   return -1;
 }
 
-const char* fswatcher_watch(FsWatcherHandle fw)
+MICRO_FSWATCHER_DEF const char* fswatcher_watch(FsWatcherHandle fw)
 {
   if (!fw) return NULL;
   
@@ -455,7 +458,7 @@ const char* fswatcher_watch(FsWatcherHandle fw)
 
     if (bytes == 0)
     {
-      free(fw_dir);
+      MICRO_FSWATCHER_FREE(fw_dir);
       continue;
     }
 
@@ -546,10 +549,10 @@ int main(void)
   return 0;
 }
   
-#endif // MICRO_EXAMPLE_MAIN
+#endif // MICRO_FSWATCHER_EXAMPLE_MAIN
   
 #ifdef __cplusplus
 }
 #endif
 
-#endif // MICRO_EXAMPLE
+#endif // MICRO_FSWATCHER
