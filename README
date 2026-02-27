@@ -1,0 +1,54 @@
+micro-fswatcher.h
+=================
+
+Listen to events in multiple files on the filesystem, as a C99
+header only library for Unix and Windows.
+
+Author:  Giovanni Santini
+Mail:    giovanni.santini@proton.me
+Github:  @San7o
+
+
+Example
+-------
+
+   FsWatcherHandle fw = fswatcher_init();
+   fswatcher_add(fw, "./LICENSE", FSWATCHER_EVENT_MODIFY) < 0)
+
+   const char* file = fswatcher_watch(fw); blocks
+   printf("Got notification on file: %s\n", file);
+
+
+Usage
+-----
+
+Do this:
+
+  #define MICRO_FSWATCHER_IMPLEMENTATION
+
+before you include this file in *one* C or C++ file to create the
+implementation.
+
+i.e. it should look like this:
+
+  #include ...
+  #include ...
+  #include ...
+  #define MICRO_FSWATCHER_IMPLEMENTATION
+  #include "micro-fswatcher.h"
+
+You can tune the library by #defining certain values. See the
+"Config" comments under "Configuration" below.
+
+
+Code
+----
+
+The official git repository of micro-fswatcher.h is hosted at:
+
+    https://github.com/San7o/micro-fswatcher.h
+
+This is part of a bigger collection of header-only C99 libraries
+called "micro-headers", contributions are welcome:
+
+     https://github.com/San7o/micro-headers
