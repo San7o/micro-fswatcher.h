@@ -16,7 +16,7 @@
 // -------
 //
 //    FsWatcherHandle fw = fswatcher_init();
-//    fswatcher_add(fw, "./LICENSE", FSWATCHER_EVENT_MODIFY) < 0)
+//    fswatcher_add(fw, "./LICENSE", FSWATCHER_EVENT_MODIFY);
 //
 //    const char* file = fswatcher_watch(fw); // blocks
 //    printf("Got notification on file: %s\n", file);
